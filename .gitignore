@@ -1,0 +1,8 @@
+Claves_*
+*.aux
+*.log
+*.out
+.DS_Store
+*.fls
+*.fdb_latexmk
+__pycache__/

@@ -1,0 +1,215 @@
+\documentclass[11pt,letterpaper]{article}
+\IfFileExists{spanish.ldf}{\usepackage[spanish,es-tabla,es-nodecimaldot]{babel}}{\usepackage{babel}}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern,microtype}
+\usepackage[margin=1.8cm,top=1.9cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{xcolor,colortbl,booktabs,tabularx,array,enumitem}
+\usepackage{titlesec,fancyhdr}
+\usepackage[hidelinks]{hyperref}
+\usepackage{url}
+
+\definecolor{tecnmblue}{RGB}{27,57,106}
+\definecolor{accentcolor}{RGB}{229,103,31}
+\definecolor{softblue}{RGB}{227,234,246}
+\definecolor{softorange}{RGB}{252,236,226}
+
+\titleformat{\section}{\large\bfseries\color{tecnmblue}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}{\normalsize\bfseries\color{tecnmblue}}{\thesubsection}{0.6em}{}
+\titlespacing*{\section}{0pt}{1.2em}{0.5em}
+\setlist{itemsep=2pt,topsep=3pt}
+\setlength{\parindent}{0pt}\setlength{\parskip}{4pt}
+\renewcommand{\arraystretch}{1.25}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+
+\pagestyle{fancy}\fancyhf{}
+\lhead{\small\color{tecnmblue}Cálculo Vectorial Aplicado · ACF-0904}
+\rhead{\small\color{tecnmblue}Proyecto Final · Unidad 5}
+\cfoot{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\newcommand{\rol}[2]{\par\smallskip{\color{tecnmblue}\textbf{#1}}\hfill{\small\itshape #2}\par}
+\newcommand{\dest}[1]{\textcolor{accentcolor}{\textbf{#1}}}
+
+\begin{document}
+
+\begin{center}
+{\LARGE\bfseries\color{tecnmblue} Proyecto Final}\\[3pt]
+{\large Guía del Proyecto: Cálculo Vectorial Aplicado}\\[3pt]
+{\normalsize Unidad 5 · Integración múltiple, campos vectoriales y teoremas integrales}\\[8pt]
+\colorbox{softblue}{\parbox{0.92\linewidth}{\centering\small
+\textbf{Caso de estudio:} selección de la ruta de mínima energía para un dron de reparto\\
+que vuela dentro de un campo de viento costero · Ingeniería en Sistemas Computacionales}}
+\end{center}
+
+\section{Escenario}
+Una empresa de entregas de última milla en Ensenada opera drones que salen de un centro de distribución \(A\) hacia un cliente \(B\), sobre la franja costera. Cerca de la costa la brisa sopla \textbf{en contra} del vuelo; tierra adentro el viento cambia de magnitud y dirección. Hay \textbf{tres rutas candidatas}: una recta, una parábola y una semicircunferencia. La ruta más corta no es necesariamente la que gasta menos batería.
+
+El equipo de ingeniería emitirá un \textbf{dictamen técnico} que responda tres preguntas: ¿qué ruta consume menos energía y es factible con la batería del dron?, ¿por qué el trabajo del viento cambia de una ruta a otra? y ¿qué dicen el rotacional, la divergencia y el teorema de Green sobre ese viento?
+
+\section{Organización del equipo}
+\begin{itemize}
+\item Equipos de \textbf{4 integrantes}. El docente asigna a cada equipo un \textbf{código} (por ejemplo, \texttt{DRN-K7P2}) que define los datos de su misión: cada equipo tiene parámetros distintos.
+\item Cada integrante es responsable del cálculo de un rol y del bloque de código correspondiente, pero \textbf{todos deben dominar los cuatro}: en el video cada quien explica un rol distinto al que calculó (sección~8).
+\item El trabajo es \dest{estrictamente en equipo}. Nadie puede decidir trabajar solo. Si el equipo se desintegra, deben notificarlo al docente \textbf{antes de la fecha límite de reorganización}; solo el docente reasigna integrantes.
+\item Equipos incompletos (3 integrantes) solo con autorización del docente, quien indicará cómo se reparte el cuarto rol.
+\end{itemize}
+
+\section{Modelo de la misión}
+Distancias en kilómetros, fuerzas en newtons, trabajo y energía en kilojoules (\(1\ \text{N}\cdot\text{km}=1\ \text{kJ}\)). Los valores de su equipo (\(L,k,u,b,a,e,c,d,\varepsilon,E_{\text{bat}}\)) aparecen en la \textbf{ficha técnica} de la Consola de Vuelo al capturar su código.
+
+\begin{tabularx}{\linewidth}{@{}l Y@{}}
+\toprule
+\textbf{Elemento} & \textbf{Modelo} \\ \midrule
+Origen y destino & \(A=(0,0)\), \(B=(L,0)\) \\
+Viento & \(\vec F(x,y)=\langle P,Q\rangle=\langle -u+b\,x+a\,y^2,\;\; d+e\,y^2-c\,x\rangle\) \\
+Ruta 1 (recta) & \(y=0,\ 0\le x\le L\) \\
+Ruta 2 (parábola) & \(y=k\,x(L-x),\ 0\le x\le L\); vértice \(V=(L/2,\;kL^2/4)\) \\
+Ruta 3 (semicircunferencia) & arco superior de centro \((L/2,0)\) y radio \(R=L/2\), recorrido de \(A\) a \(B\) \\
+Regiones & \(D_2\): entre la Ruta 1 y la Ruta 2. \(D_3\): semidisco entre la Ruta 1 y la Ruta 3 \\
+Energía de vuelo & \(E_i=\varepsilon\,\ell_i-W_i\), donde \(\ell_i\) es la longitud de la ruta, \(W_i=\int_{C_i}\vec F\cdot d\vec r\) y \(\varepsilon\) el costo por km en aire en calma \\
+Batería & capacidad \(E_{\text{bat}}\); reserva mínima de 20\,\%: una ruta es factible si \(E_i\le 0.8\,E_{\text{bat}}\) \\ \bottomrule
+\end{tabularx}
+
+\section{Tareas por rol}
+\rol{Integrante 1 · Ingeniero de Logística}{5.8 Integral de línea}
+Calcular a mano el \textbf{trabajo del viento} sobre la Ruta 1 y sobre la Ruta 2:
+\[ W_i=\int_{C_i}\vec F\cdot d\vec r=\int_{t_0}^{t_1}\Big[P\big(x(t),y(t)\big)\,x'(t)+Q\big(x(t),y(t)\big)\,y'(t)\Big]dt . \]
+Mostrar la parametrización (\(x=t\), \(y=k\,t(L-t)\)), cada término y su integral. Explicar por qué los términos con \(d\) y con \(e\,y^2\,dy\) integran a cero, e interpretar el signo de cada \(W\).
+
+\rol{Integrante 2 · Ingeniero de Dinámica}{5.7 y 5.9 Campos vectoriales, divergencia y rotacional}
+\begin{enumerate}[label=\alph*)]
+\item Obtener \(\operatorname{div}\vec F=\partial P/\partial x+\partial Q/\partial y\) y \((\operatorname{rot}\vec F)\cdot\hat k=\partial Q/\partial x-\partial P/\partial y\); evaluarlos en el vértice \(V\).
+\item Decidir si \(\vec F\) es conservativo y justificarlo. ¿Qué consecuencia tiene para el trabajo sobre rutas distintas con los mismos extremos?
+\item Interpretar: ¿en \(V\) el aire se comporta como fuente o como sumidero?, ¿en qué sentido tiende a girar? Pasar la expresión del rotacional al Analista de Zona.
+\end{enumerate}
+
+\rol{Integrante 3 · Analista de Zona}{5.3 y 5.4 Integral doble en rectangulares y polares}
+\begin{enumerate}[label=\alph*)]
+\item En coordenadas rectangulares: \(\displaystyle I_2=\iint_{D_2}(\operatorname{rot}\vec F\cdot\hat k)\,dA=\int_0^{L}\!\!\int_0^{k x(L-x)}(-c-2a\,y)\,dy\,dx\).
+\item En coordenadas polares centradas en \((L/2,0)\): \(\displaystyle I_3=\iint_{D_3}(\operatorname{rot}\vec F\cdot\hat k)\,dA=\int_0^{\pi}\!\!\int_0^{R}\big(-c-2a\,r\sin\theta\big)\,r\,dr\,d\theta\).
+\item Interpretar el signo de \(I_2\) e \(I_3\) y pasar ambos resultados al Gerente de Calidad.
+\end{enumerate}
+
+\rol{Integrante 4 · Gerente de Calidad}{5.10 Teorema de Green}
+\begin{enumerate}[label=\alph*)]
+\item Calcular a mano \(W_3\) directamente sobre la semicircunferencia: \(x=\tfrac L2+R\cos\theta,\ y=R\sin\theta\), con \(\theta\) de \(\pi\) a \(0\).
+\item Comprobar el teorema de Green con el contorno cerrado que va de \(A\) a \(B\) por la recta y regresa por la ruta curva (sentido antihorario):
+\(\displaystyle W_1-W_2=\iint_{D_2}\Big(\frac{\partial Q}{\partial x}-\frac{\partial P}{\partial y}\Big)dA\) y \(\displaystyle W_1-W_3=\iint_{D_3}\Big(\frac{\partial Q}{\partial x}-\frac{\partial P}{\partial y}\Big)dA\). Usar \(W_1,W_2\) del Integrante 1 e \(I_2,I_3\) del Integrante 3.
+\end{enumerate}
+Explicar con Green \textbf{por qué} las rutas curvas reciben un trabajo del viento distinto al de la recta.
+
+\section{Componente Python (todo el equipo)}
+Partan de la plantilla \texttt{dron\_plantilla.py} (o su versión para Google Colab, \texttt{dron\_plantilla.ipynb}) del repositorio del curso. Cada integrante programa el bloque de su rol; el programa completo debe:
+\begin{enumerate}
+\item Calcular numéricamente \(W_1,W_2,W_3\) con \texttt{scipy.integrate.quad} e \(I_2,I_3\) con \texttt{dblquad}, y comprobar Green.
+\item Calcular la longitud de la Ruta 2, \(\ell_2=\int_0^L\sqrt{1+k^2(L-2t)^2}\,dt\), las energías \(E_1,E_2,E_3\) y la ruta más económica.
+\item Generar el mapa del viento con las tres rutas, la gráfica de energía por ruta y una \textbf{animación} (\texttt{FuncAnimation}) del dron volando, exportada a GIF o MP4.
+\end{enumerate}
+Entreguen el código como \textbf{repositorio público de GitHub} o \textbf{cuaderno de Colab} con permiso de lectura; el enlace va en la portada. El código no cuenta dentro de las 4 cuartillas.
+
+\section{Consola de Vuelo}
+Herramienta en línea que funciona en computadora o celular, sin instalar nada:
+\begin{center}\small\url{https://thuerta2398.github.io/calculo-vectorial-u5-dron-sistemas/}\end{center}
+\begin{enumerate}
+\item Capturen su código de equipo y pulsen \emph{Cargar misión}. Se muestran su ficha técnica y su mapa.
+\item \textbf{Mapa 2D}: activen las capas (rotacional, campo \(\vec F\), rutas, regiones \(D_2\) y \(D_3\)), elijan una ruta y pulsen \emph{Volar}; la consola muestra \(\vec F\) y \(\vec F\cdot\hat T\) en la posición del dron.
+\item \textbf{Perfil de viento}: \(\vec F\cdot\hat T\) a lo largo de cada ruta. El área bajo cada curva es el trabajo \(W_i\).
+\item \textbf{Verificador}: capturen sus 9 resultados. La consola solo responde \emph{Correcto} o \emph{Revisa}; tras varios intentos ofrece pistas. Formato: punto decimal, sin unidades, al menos 2 decimales (\texttt{-14.37}, no \texttt{-14,37} ni \texttt{-14.37 kJ}).
+\item Con los 9 resultados correctos aparece el \textbf{folio de verificación}, que va en la portada del reporte.
+\end{enumerate}
+\textbf{Ejemplo guiado:} el proyecto completo resuelto paso a paso con el código \texttt{DEMO}, con instrucciones para el código, el video y el PDF, en \url{https://github.com/Thuerta2398/calculo-vectorial-u5-dron-sistemas/blob/main/ejemplo/Ejemplo_Guiado_DEMO.pdf}
+
+La consola y Python comprueban resultados, pero \textbf{no sustituyen el procedimiento}: el reporte debe mostrar el desarrollo completo a mano o en editor de ecuaciones.
+
+\section{Dictamen de ingeniería}
+Redactado en conjunto, con los datos de los cuatro roles:
+\begin{enumerate}
+\item \textbf{Energía y factibilidad.} Comparen \(E_1,E_2,E_3\) con el límite \(0.8\,E_{\text{bat}}\). ¿Qué ruta gasta menos? ¿Cuáles son factibles con la reserva del 20\,\%?
+\item \textbf{Efecto del viento.} Con el signo de cada \(W_i\), ¿el viento ayuda o frena al dron en cada ruta? ¿Por qué la ruta más corta no siempre es la más económica?
+\item \textbf{Rotacional y Green.} ¿\(\vec F\) es conservativo? ¿Qué indican \(\operatorname{div}\vec F\) y \(\operatorname{rot}\vec F\) en \(V\)? Expliquen con \(I_2\) e \(I_3\) la diferencia de trabajo entre la recta y las rutas curvas.
+\end{enumerate}
+El dictamen cierra con una decisión explícita: \textbf{ruta aprobada} (cuál y con qué reserva de batería), \textbf{aprobada con condiciones} o \textbf{misión rechazada}.
+
+\section{Entrega}
+\textbf{Un solo archivo PDF}, el mismo para todo el equipo, que \textbf{cada integrante sube} a la plataforma.
+\begin{itemize}
+\item \textbf{Portada:} código de equipo, folio de verificación, nombre de cada integrante con su rol, \textbf{enlace al video} y \textbf{enlace al código}.
+\item \textbf{Reporte técnico:} máximo \textbf{4 cuartillas} sin contar la portada: desarrollo por rol, figuras rotuladas (mapa, energía por ruta, capturas de la consola) con unidades, y dictamen.
+\item \textbf{Video:} de 4:30 a 5:30 minutos, subido a Google Drive con permiso \emph{``Cualquier persona con el enlace puede ver''}. Antes de entregar, prueben los dos enlaces en una ventana de incógnito.
+\end{itemize}
+
+\subsection*{Requisitos del video}
+\begin{itemize}
+\item \dest{Los cuatro integrantes aparecen a cuadro y hablan.} No es opcional.
+\item \textbf{Rotación de roles:} cada integrante explica el resultado de un rol distinto al que calculó:
+\begin{center}\small
+\begin{tabular}{@{}ll@{}}\toprule
+Quien calculó\ldots & explica en el video\ldots \\ \midrule
+Logística & Dinámica \\ Dinámica & Análisis de Zona \\ Análisis de Zona & Calidad \\ Calidad & Logística \\ \bottomrule
+\end{tabular}\end{center}
+\item Explicar con sus palabras, no leer: pueden apoyarse en la consola, en la animación o en notas breves, pero no en un guion leído.
+\item Mostrar en pantalla la \textbf{animación} generada con Python y al menos una vez la consola; cerrar con el dictamen del equipo.
+\end{itemize}
+
+\section{Evaluación}
+\subsection*{Requisitos de admisión (se revisan antes de calificar)}
+\begin{enumerate}
+\item Un solo PDF con código de equipo, folio y nombres de los cuatro integrantes en la portada.
+\item El enlace al video abre con permiso público de lectura. \textbf{Si no abre, el video vale 0.}
+\item Los cuatro integrantes aparecen a cuadro. \textbf{Quien no aparezca tiene 0 en el video.}
+\end{enumerate}
+
+\subsection*{Rúbrica del video (50 puntos)}
+{\small
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{3.2cm} Y Y Y@{}}
+\toprule
+\textbf{Criterio} & \textbf{Excelente} & \textbf{Suficiente} & \textbf{Insuficiente} \\ \midrule
+Dominio sin lectura (20) & Explican con sus palabras, justifican el porqué y no solo el qué, miran a cámara (20) & Se apoyan en notas, pero explican (12) & Leen un guion o la pantalla (0--5) \\
+Interpretación física y dictamen (15) & Conectan cada resultado con la decisión de ruta (15) & Dan resultados con interpretación parcial (8) & Solo recitan números (0--3) \\
+Participación equitativa (10) & Los cuatro explican tiempos similares (10) & Desequilibrio claro (5) & Uno o dos acaparan el video (0) \\
+Animación y consola (5) & Muestran y explican la animación de Python y la consola (5) & Muestran solo una de las dos (2) & No las muestran (0) \\ \bottomrule
+\end{tabularx}}
+
+\subsection*{Rúbrica del reporte técnico (50 puntos)}
+{\small
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{4.6cm} c Y@{}}
+\toprule
+\textbf{Criterio} & \textbf{Puntos} & \textbf{Qué se revisa} \\ \midrule
+Desarrollo analítico por rol & 20 (4\,\(\times\)\,5) & Planteamiento, procedimiento completo y resultado correcto con los datos del equipo \\
+Código Python & 10 & El enlace abre; el programa corre sin errores (3), reproduce los 9 resultados (3), genera la animación (2) y está organizado y comentado por rol (2) \\
+Folio de verificación & 5 & El folio corresponde al código del equipo \\
+Dictamen de ingeniería integrado & 10 & Responde las 3 preguntas con datos de los 4 roles y emite una decisión explícita \\
+Formato técnico & 5 & Figuras rotuladas, unidades, máximo 4 cuartillas \\ \bottomrule
+\end{tabularx}}
+
+\subsection*{Calificación y modificadores individuales}
+\begin{itemize}
+\item Calificación del proyecto = video (50) + reporte (50). La nota del equipo se asigna a cada integrante y después se aplican los modificadores.
+\item \dest{Trabajo individual por decisión propia: calificación máxima de 30/100.}
+\item Integrante que no aparece a cuadro: 0 en el video; conserva la nota del reporte.
+\item Video con duración fuera de 4:30--5:30: se descuenta el 20\,\% del rubro de video.
+\item Reporte, código o video que no corresponden al código del equipo: se anula esa evidencia.
+\end{itemize}
+
+\section{Ruta de trabajo sugerida}
+Las fechas de entrega y de reorganización las publica el docente en la plataforma.\par\smallskip
+{\small
+\begin{tabularx}{\linewidth}{@{}l Y@{}}\toprule
+Semana 1 & Formar equipos, cargar el código en la consola, repartir roles, leer el ejemplo guiado y abrir la plantilla de Python. \\
+Semana 2 & Cálculos a mano por rol y bloques de código; verificar en la consola los resultados de cada rol. \\
+Semana 3 & Comprobación de Green, energías, animación, folio y dictamen; borrador del reporte. \\
+Semana 4 (si aplica) & Ensayo y grabación del video, revisión de enlaces y entrega. \\ \bottomrule
+\end{tabularx}}
+
+\section*{Referencias}
+\begin{list}{}{\leftmargin=1.5em\itemindent=-1.5em\itemsep=3pt}
+\item Hass, J. R., Heil, C. E., \& Weir, M. D. (2018). \textit{Thomas' calculus} (14th ed.). Pearson.
+\item Hunter, J. D. (2007). Matplotlib: A 2D graphics environment. \textit{Computing in Science \& Engineering, 9}(3), 90--95. \url{https://doi.org/10.1109/MCSE.2007.55}
+\item Marsden, J. E., \& Tromba, A. J. (2012). \textit{Vector calculus} (6th ed.). W. H. Freeman.
+\item Stewart, J., Clegg, D., \& Watson, S. (2021). \textit{Calculus: Early transcendentals} (9th ed.). Cengage Learning.
+\item Virtanen, P., Gommers, R., Oliphant, T. E., Haberland, M., Reddy, T., Cournapeau, D., \ldots{} SciPy 1.0 Contributors. (2020). SciPy 1.0: Fundamental algorithms for scientific computing in Python. \textit{Nature Methods, 17}(3), 261--272. \url{https://doi.org/10.1038/s41592-019-0686-2}
+\end{list}
+
+\end{document}

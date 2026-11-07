@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Consola de Vuelo · Dron</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: consola de planta — barra de mando lateral (código, ficha, capas) + visor principal con pestañas */
+:root{
+  --bg:#eef1f6; --panel:#ffffff; --ink:#14213a; --muted:#56627a; --line:#d4dae5;
+  --brand:#1b396a; --brand-soft:#e3eaf6; --accent:#e5671f; --ok:#1d7f47; --ok-soft:#e2f3e9; --bad:#b8352a; --bad-soft:#fbe7e4;
+  --f-display:"Barlow Condensed","Arial Narrow",sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0d1420; --panel:#151f31; --ink:#e5eaf3; --muted:#9aa6bb; --line:#2a3852;
+  --brand:#8fb0ea; --brand-soft:#1d2b45; --accent:#ff9450; --ok:#4cc27f; --ok-soft:#163626; --bad:#ff7466; --bad-soft:#3a1d1b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1420; --panel:#151f31; --ink:#e5eaf3; --muted:#9aa6bb; --line:#2a3852;
+  --brand:#8fb0ea; --brand-soft:#1d2b45; --accent:#ff9450; --ok:#4cc27f; --ok-soft:#163626; --bad:#ff7466; --bad-soft:#3a1d1b; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:18px 40px}
+.wrap{max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 24px;border-bottom:2px solid var(--brand);padding-bottom:10px}
+header.top h1{font-family:var(--f-display);font-weight:700;font-size:clamp(1.7rem,3.4vw,2.4rem);letter-spacing:.02em;margin:0;line-height:1;text-wrap:balance;color:var(--brand)}
+header.top h1 span{color:var(--accent)}
+.meta{font-family:var(--f-mono);font-size:.78rem;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+.grid{display:grid;grid-template-columns:330px minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 16px;min-width:0}
+.side{display:flex;flex-direction:column;gap:14px;min-width:0}
+h2{font-family:var(--f-display);font-weight:600;font-size:1.1rem;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;color:var(--brand)}
+label{font-size:.85rem;color:var(--muted)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+input[type=text]{font-family:var(--f-mono);font-size:1rem;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);min-width:0;flex:1}
+input[type=text]:focus-visible,button:focus-visible,input[type=range]:focus-visible,input[type=checkbox]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button{font-family:var(--f-body);font-weight:600;font-size:.9rem;border:1px solid var(--brand);background:var(--brand);color:var(--panel);padding:8px 14px;border-radius:6px;cursor:pointer}
+button.ghost{background:transparent;color:var(--brand)}
+button:hover{filter:brightness(1.08)}
+.status{font-size:.85rem;margin-top:8px}
+.badge{display:inline-block;font-family:var(--f-mono);font-size:.75rem;padding:2px 8px;border-radius:99px;background:var(--brand-soft);color:var(--brand);letter-spacing:.04em}
+.badge.demo{background:var(--bad-soft);color:var(--bad)}
+dl.ficha{margin:0;display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+dl.ficha div{border-top:1px dashed var(--line);padding-top:6px}
+dl.ficha dt{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+dl.ficha dd{margin:0;font-family:var(--f-mono);font-size:.86rem;overflow-wrap:anywhere}
+.layers{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px}
+.layers label{display:flex;gap:6px;align-items:center;color:var(--ink);font-size:.86rem;cursor:pointer}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin-bottom:12px}
+.tabs button{background:transparent;color:var(--muted);border:none;border-bottom:3px solid transparent;border-radius:0;padding:8px 12px}
+.tabs button[aria-selected=true]{color:var(--brand);border-bottom-color:var(--accent)}
+.viz{position:relative;width:100%}
+canvas{display:block;width:100%;border-radius:6px}
+#plan{background:var(--bg)}
+#perfil{aspect-ratio:16/7;background:var(--bg)}
+.radios{display:flex;gap:10px;flex-wrap:wrap;font-size:.86rem}
+.radios label{color:var(--ink);display:flex;gap:4px;align-items:center;cursor:pointer}
+#plot3d{width:100%;aspect-ratio:16/10;min-height:300px}
+.ctrl{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.ctrl input[type=range]{flex:1;min-width:160px;accent-color:var(--accent)}
+.readout{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-top:10px}
+.readout div{background:var(--bg);border-radius:6px;padding:6px 10px}
+.readout span{display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.readout b{font-family:var(--f-mono);font-weight:500;font-variant-numeric:tabular-nums}
+.legend{display:flex;align-items:center;gap:8px;font-family:var(--f-mono);font-size:.75rem;color:var(--muted);margin-top:8px;flex-wrap:wrap}
+.legend .bar{height:10px;flex:1;min-width:120px;max-width:260px;border-radius:3px;background:linear-gradient(90deg,#254e8c,#6092cc,#b0d0ec,#f6f7f2)}
+.key{display:inline-flex;align-items:center;gap:4px}
+.key i{width:18px;height:3px;display:inline-block;border-radius:2px}
+.note{font-size:.84rem;color:var(--muted)}
+.roles{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.role{border:1px solid var(--line);border-radius:8px;padding:12px;min-width:0}
+.role h3{margin:0 0 2px;font-family:var(--f-display);font-size:1.05rem;letter-spacing:.06em;text-transform:uppercase}
+.role .tema{font-size:.78rem;color:var(--muted);margin-bottom:8px}
+.field{display:flex;flex-direction:column;gap:4px;padding:8px 0;border-top:1px dashed var(--line)}
+.field .q{font-size:.88rem}
+.field .unit{font-family:var(--f-mono);font-size:.75rem;color:var(--muted)}
+.chip{font-size:.8rem;font-weight:600;padding:2px 8px;border-radius:99px;display:inline-block}
+.chip.ok{background:var(--ok-soft);color:var(--ok)}
+.chip.bad{background:var(--bad-soft);color:var(--bad)}
+.hint{font-size:.8rem;color:var(--muted);background:var(--bg);border-left:3px solid var(--accent);padding:4px 8px;border-radius:0 4px 4px 0}
+.formato{font-size:.84rem;background:var(--brand-soft);color:var(--ink);border-radius:6px;padding:8px 12px;margin-bottom:12px}
+.formato code{font-family:var(--f-mono)}
+.folio{margin-top:14px;border:2px dashed var(--line);border-radius:8px;padding:12px 14px}
+.folio.done{border-color:var(--ok);background:var(--ok-soft)}
+.folio .num{font-family:var(--f-mono);font-size:1.25rem;letter-spacing:.08em;color:var(--ok)}
+.progress{height:6px;background:var(--bg);border-radius:99px;overflow:hidden;margin-top:6px}
+.progress i{display:block;height:100%;background:var(--ok);width:0;transition:width .3s}
+footer{font-size:.82rem;color:var(--muted);border-top:1px solid var(--line);padding-top:10px}
+sub,sup{font-size:.72em}
+@media (prefers-reduced-motion: reduce){.progress i{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Consola de Vuelo <span>Dron</span></h1>
+    <div class="meta">Cálculo Vectorial · Unidad 5 · TecNM Campus Ensenada</div>
+  </header>
+
+  <div class="grid">
+    <aside class="side">
+      <section class="panel" aria-labelledby="h-acc">
+        <h2 id="h-acc">Código de equipo</h2>
+        <form id="f-code" class="row" autocomplete="off">
+          <input type="text" id="code" placeholder="DRN-XXXX" aria-label="Código de equipo" maxlength="9">
+          <button type="submit">Cargar misión</button>
+        </form>
+        <div class="status" id="status"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="h-ficha">
+        <h2 id="h-ficha">Ficha técnica</h2>
+        <dl class="ficha" id="ficha"></dl>
+      </section>
+
+      <section class="panel" aria-labelledby="h-cap">
+        <h2 id="h-cap">Capas del mapa</h2>
+        <div class="layers">
+          <label><input type="checkbox" id="L-rot" checked> Rotacional</label>
+          <label><input type="checkbox" id="L-field" checked> Campo F</label>
+          <label><input type="checkbox" id="L-r1" checked> Ruta 1</label>
+          <label><input type="checkbox" id="L-r2" checked> Ruta 2</label>
+          <label><input type="checkbox" id="L-r3" checked> Ruta 3</label>
+          <label><input type="checkbox" id="L-reg"> Regiones D₂, D₃</label>
+        </div>
+      </section>
+    </aside>
+
+    <main class="panel" style="min-width:0">
+      <div class="tabs" role="tablist">
+        <button role="tab" id="t-plan" aria-selected="true" aria-controls="v-plan">Mapa 2D</button>
+        <button role="tab" id="t-perfil" aria-selected="false" aria-controls="v-perfil">Perfil de viento</button>
+        <button role="tab" id="t-ver" aria-selected="false" aria-controls="v-ver">Verificador</button>
+      </div>
+
+      <section id="v-plan" role="tabpanel">
+        <div class="viz"><canvas id="plan" aria-label="Mapa de la zona de reparto con rotacional del viento, campo y rutas"></canvas></div>
+        <div class="ctrl">
+          <div class="radios" role="radiogroup" aria-label="Ruta del vuelo">
+            <label><input type="radio" name="ruta" value="0"> Ruta 1</label>
+            <label><input type="radio" name="ruta" value="1" checked> Ruta 2</label>
+            <label><input type="radio" name="ruta" value="2"> Ruta 3</label>
+          </div>
+          <button type="button" id="play" class="ghost">▶ Volar</button>
+          <input type="range" id="sslider" min="0" max="1" step="0.002" value="0.5" aria-label="Avance sobre la ruta">
+        </div>
+        <div class="readout">
+          <div><span>Avance</span><b id="r-s">—</b></div>
+          <div><span>Posición (km)</span><b id="r-xy">—</b></div>
+          <div><span>F en el dron (N)</span><b id="r-F">—</b></div>
+          <div><span>F·T̂ (N)</span><b id="r-FT">—</b></div>
+          <div><span>Cursor</span><b id="r-cur">mueve el cursor</b></div>
+        </div>
+        <div class="legend"><span>rot F·k̂ (N/km):</span><span id="lg-lo">—</span><span class="bar"></span><span id="lg-hi">—</span><span>· ejes en km</span>
+          <span class="key"><i style="background:#14213a"></i>Ruta 1</span>
+          <span class="key"><i style="background:#e5671f"></i>Ruta 2</span>
+          <span class="key"><i style="background:#7a3fd1"></i>Ruta 3</span></div>
+        <p class="note">El color de fondo es la componente k̂ del rotacional de F: entre más oscuro, más negativo (giro horario más intenso). F·T̂ es la componente del viento en la dirección del vuelo: positiva, el viento empuja a favor; negativa, en contra. Las tres rutas van de A a B.</p>
+      </section>
+
+      <section id="v-perfil" role="tabpanel" hidden>
+        <div class="viz"><canvas id="perfil" aria-label="Componente tangencial del viento a lo largo de cada ruta"></canvas></div>
+        <p class="note">Eje horizontal: distancia recorrida s (km) desde A. Eje vertical: F·T̂ (N), la componente del viento a lo largo de la ruta. El área bajo cada curva es el trabajo del viento sobre esa ruta, W = ∫ F·T̂ ds: úsenlo para anticipar el signo y el orden de sus resultados, no para sustituir el cálculo.</p>
+      </section>
+
+      <section id="v-ver" role="tabpanel" hidden>
+        <div class="formato"><b>Formato de captura:</b> número con <b>punto decimal</b>, sin unidades ni espacios, al menos 2 decimales. Ejemplos válidos: <code>-12.57</code> · <code>0.35</code> · <code>134.20</code>. No válidos: <code>12,57</code> · <code>12.57 kJ</code> · <code>4π</code>.</div>
+        <div class="roles" id="roles"></div>
+        <div class="folio" id="folio">
+          <b>Folio de verificación</b>
+          <div class="progress" aria-hidden="true"><i id="prog"></i></div>
+          <p class="note" id="folio-txt">Verifiquen los 9 resultados para obtener el folio. Va en la portada del reporte.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer>
+    La consola sirve para explorar y comprobar; no sustituye el desarrollo a mano ni el código del equipo. El reporte debe mostrar el procedimiento completo y, en el video, cada integrante explica el resultado de un rol distinto al que calculó.
+  </footer>
+</div>
+
+<script>
+const TEAMS = {"DRN-VRPE":{"L":8,"k":0.12,"u":2,"b":0.2,"a":0.05,"e":0.1,"c":2.0,"d":8.0,"eps":12,"Eb":130},"DRN-VEKP":{"L":6,"k":0.1,"u":1,"b":0.1,"a":0.5,"e":0.1,"c":1.0,"d":3.0,"eps":6,"Eb":40},"DRN-3EUM":{"L":5,"k":0.2,"u":2,"b":0.4,"a":0.1,"e":0.05,"c":1.5,"d":3.75,"eps":6,"Eb":45},"DRN-XLRU":{"L":5,"k":0.25,"u":1,"b":0.3,"a":0.2,"e":0.05,"c":1.5,"d":3.75,"eps":15,"Eb":105},"DRN-M5BE":{"L":8,"k":0.1,"u":3,"b":0.4,"a":0.4,"e":0.05,"c":1.0,"d":4.0,"eps":10,"Eb":105},"DRN-QRD5":{"L":6,"k":0.2,"u":2,"b":0.4,"a":0.15,"e":0.1,"c":0.5,"d":1.5,"eps":15,"Eb":130},"DEMO":{"L":6,"k":0.15,"u":1,"b":0.3,"a":0.15,"e":0.05,"c":2.5,"d":7.5,"eps":12,"Eb":90}};
+let P = null, code = null, s = 0.5, ruta = 1, playing = false, W0 = null;
+const $ = id => document.getElementById(id);
+const fmt = (v, n = 2) => (Math.abs(v) < 1e-12 ? 0 : v).toFixed(n);
+const num = v => (v < 0 ? "−" : "") + Math.abs(v);
+const term = (v, txt) => (v < 0 ? " − " : " + ") + Math.abs(v) + txt;
+
+/* ---------- Modelo ---------- */
+const Fv = (x, y) => [-P.u + P.b * x + P.a * y * y, P.d + P.e * y * y - P.c * x];
+const rotf = (x, y) => -P.c - 2 * P.a * y;
+const R_ = () => P.L / 2, H_ = () => P.k * P.L * P.L / 4;
+// rutas parametrizadas por u en [0,1], de A=(0,0) a B=(L,0)
+function rp(i, u) {
+  const L = P.L, R = L / 2;
+  if (i === 0) return [L * u, 0];
+  if (i === 1) { const x = L * u; return [x, P.k * x * (L - x)]; }
+  const th = Math.PI * (1 - u); return [R + R * Math.cos(th), R * Math.sin(th)];
+}
+function rd(i, u) {
+  const L = P.L, R = L / 2;
+  if (i === 0) return [L, 0];
+  if (i === 1) { const x = L * u; return [L, P.k * (L - 2 * x) * L]; }
+  const th = Math.PI * (1 - u); return [R * Math.sin(th) * Math.PI, -R * Math.cos(th) * Math.PI];
+}
+function answers(p) {
+  const L = p.L, R = L / 2, h = p.k * L * L / 4, m = p.k * L;
+  const W1 = -p.u * L + p.b * L * L / 2;
+  const I2 = -(p.c * p.k * L ** 3 / 6 + p.a * p.k * p.k * L ** 5 / 30);
+  const I3 = -(p.c * Math.PI * R * R / 2 + 4 * p.a * R ** 3 / 3);
+  const l2 = (m * Math.sqrt(1 + m * m) + Math.asinh(m)) / (2 * p.k);
+  const W2 = W1 - I2, W3 = W1 - I3;
+  const E = [p.eps * L - W1, p.eps * l2 - W2, p.eps * Math.PI * R - W3];
+  return {W1, W2, div: p.b + 2 * p.e * h, rot: -p.c - 2 * p.a * h, I2, I3, W3, l2, Emin: Math.min(...E)};
+}
+function fnv(str) { let h = 0x811c9dc5; for (const ch of str) { h ^= ch.charCodeAt(0); h = Math.imul(h, 0x01000193) >>> 0; } return h; }
+const folioOf = c => c + "-" + fnv(c + "|CV-U5-DRON-2026|ITE").toString(36).toUpperCase().padStart(7, "0");
+
+/* ---------- Roles y campos ---------- */
+const ROLES = [
+  {id:"log", name:"Ingeniero de Logística", tema:"5.8 Integral de línea", fields:[
+    {k:"W1", q:"Trabajo del viento sobre la Ruta 1 (recta de A a B): W₁ = ∫ F·dr", u:"kJ",
+     h:["Sobre la recta, y = 0 y dy = 0: solo queda ∫ P(x, 0) dx de 0 a L.","P(x, 0) = −u + b·x. Integra un polinomio de grado 1."]},
+    {k:"W2", q:"Trabajo del viento sobre la Ruta 2 (parábola y = k·x(L − x)): W₂", u:"kJ",
+     h:["Parametriza x = t, y = k·t(L − t), t ∈ [0, L]; dx = dt, dy = k(L − 2t) dt.","Desarrolla P·x′ + Q·y′ como polinomio en t. El término d·y′ integra a cero: ¿por qué?"]}]},
+  {id:"din", name:"Ingeniero de Dinámica", tema:"5.7 y 5.9 Campos vectoriales, divergencia y rotacional", fields:[
+    {k:"div", q:"Divergencia de F en el vértice V de la Ruta 2", u:"N/km", h:["div F = ∂P/∂x + ∂Q/∂y, con F = ⟨P, Q⟩.","V = (L/2, k·L²/4), el punto más alto de la parábola."]},
+    {k:"rot", q:"Componente k̂ del rotacional de F en V", u:"N/km", h:["(rot F)·k̂ = ∂Q/∂x − ∂P/∂y.","Evalúa en V. Si el rotacional no es cero en todo el plano, F no es conservativo."]}]},
+  {id:"zon", name:"Analista de Zona", tema:"5.3 y 5.4 Integral doble en rectangulares y polares", fields:[
+    {k:"I2", q:"∬ (rot F·k̂) dA sobre D₂, la región entre la Ruta 1 y la Ruta 2", u:"kJ",
+     h:["Rectangulares: 0 ≤ x ≤ L, 0 ≤ y ≤ k·x(L − x). Integra primero en y.","Usa el rotacional del Ingeniero de Dinámica: −c − 2a·y."]},
+    {k:"I3", q:"∬ (rot F·k̂) dA sobre D₃, el semidisco entre la Ruta 1 y la Ruta 3", u:"kJ",
+     h:["Polares centradas en (L/2, 0): x = L/2 + r cos θ, y = r sen θ, dA = r dr dθ.","Límites: 0 ≤ r ≤ R, 0 ≤ θ ≤ π. No olvides el factor r."]}]},
+  {id:"cal", name:"Gerente de Calidad", tema:"5.10 Teorema de Green", fields:[
+    {k:"W3", q:"Trabajo del viento sobre la Ruta 3 (semicircunferencia), calculado directamente", u:"kJ",
+     h:["x = L/2 + R cos θ, y = R sen θ, con θ de π a 0 (el dron va de A a B).","Comprueba con Green: W₁ − W₃ = ∬_D₃ rot F dA. El contorno A→B por la recta y regreso por el arco es antihorario."]}]},
+  {id:"eq", name:"Equipo · Python", tema:"Cálculo numérico y decisión", fields:[
+    {k:"l2", q:"Longitud de la Ruta 2: ℓ₂ = ∫ ‖r′(t)‖ dt", u:"km", h:["ℓ₂ = ∫₀ᴸ √(1 + k²(L − 2t)²) dt. Calcúlenla con scipy.integrate.quad.","Comprueben: debe quedar entre L y πL/2."]},
+    {k:"Emin", q:"Energía de la ruta más económica: mín(E₁, E₂, E₃), con Eᵢ = ε·ℓᵢ − Wᵢ", u:"kJ", h:["Necesitan ℓ₁ = L, ℓ₂ (arriba) y ℓ₃ = πR, y los tres trabajos.","Capturen solo el menor de los tres valores de energía."]}]}
+];
+const ALLK = ROLES.flatMap(r => r.fields.map(f => f.k));
+let state = {};
+const store = {
+  get(c){ try { return JSON.parse(localStorage.getItem("dronU5:" + c)) || {}; } catch(e){ return {}; } },
+  set(c, v){ try { localStorage.setItem("dronU5:" + c, JSON.stringify(v)); } catch(e){} }
+};
+function buildRoles() {
+  const box = $("roles"); box.innerHTML = "";
+  for (const r of ROLES) {
+    const d = document.createElement("div"); d.className = "role";
+    d.innerHTML = `<h3>${r.name}</h3><div class="tema">${r.tema}</div>`;
+    for (const f of r.fields) {
+      const w = document.createElement("div"); w.className = "field";
+      w.innerHTML = `<div class="q">${f.q} <span class="unit">[${f.u}]</span></div>
+        <form class="row" data-k="${f.k}"><input type="text" id="in-${f.k}" inputmode="decimal" aria-label="${f.q}" placeholder="0.00">
+        <button type="submit" class="ghost">Verificar</button></form>
+        <div class="row" id="res-${f.k}"></div><div id="hint-${f.k}"></div>`;
+      d.appendChild(w);
+    }
+    box.appendChild(d);
+  }
+  box.querySelectorAll("form").forEach(fm => fm.addEventListener("submit", e => { e.preventDefault(); check(fm.dataset.k); }));
+  ALLK.forEach(paint);
+}
+function fieldDef(k){ for (const r of ROLES) for (const f of r.fields) if (f.k === k) return f; }
+function paint(k) {
+  const st = state[k] || {n:0, ok:false}, f = fieldDef(k), res = $("res-" + k), hb = $("hint-" + k);
+  if (!res) return;
+  res.innerHTML = st.ok ? `<span class="chip ok">✔ Correcto</span><span class="note">Intentos: ${st.n}</span>`
+    : st.n ? `<span class="chip bad">✖ Revisa</span><span class="note">Intentos: ${st.n}</span>` : "";
+  if (st.msg && !st.ok) res.innerHTML += `<span class="note">${st.msg}</span>`;
+  const lvl = st.ok ? 0 : st.n >= 4 ? 2 : st.n >= 2 ? 1 : 0;
+  hb.innerHTML = f.h.slice(0, lvl).map((h, i) => `<div class="hint">Pista ${i + 1}: ${h}</div>`).join("");
+  const done = ALLK.filter(x => (state[x] || {}).ok).length;
+  $("prog").style.width = (100 * done / ALLK.length) + "%";
+  const fo = $("folio");
+  if (done === ALLK.length && code !== "DEMO") { fo.classList.add("done");
+    $("folio-txt").innerHTML = `<span class="num">${folioOf(code)}</span><br><span class="note">Copien este folio en la portada del reporte técnico.</span>`; }
+  else if (done === ALLK.length) { fo.classList.add("done"); $("folio-txt").textContent = "Práctica completa. Con los datos de ejemplo no se emite folio: carguen su código de equipo."; }
+  else { fo.classList.remove("done"); $("folio-txt").textContent = `Verificados ${done} de ${ALLK.length}. Al completar los ${ALLK.length} resultados aparece el folio para la portada del reporte.`; }
+}
+function check(k) {
+  const raw = $("in-" + k).value.trim(), st = state[k] || (state[k] = {n:0, ok:false});
+  if (st.ok) return;
+  st.msg = "";
+  if (raw.includes(",")) { st.msg = "Usa punto decimal: 12.57, no 12,57. Este intento no cuenta."; paint(k); return; }
+  if (!/^[-+]?\d+(\.\d+)?$/.test(raw.replace("−","-"))) { st.msg = "Escribe solo el número, sin unidades ni símbolos. Este intento no cuenta."; paint(k); return; }
+  const v = parseFloat(raw.replace("−","-")), ref = answers(P)[k];
+  const tol = Math.max(0.01 * Math.abs(ref), 0.006);
+  st.n++; st.ok = Math.abs(v - ref) <= tol;
+  store.set(code, state); paint(k);
+}
+
+/* ---------- Carga de equipo ---------- */
+function loadTeam(c) {
+  c = c.trim().toUpperCase().replace(/\s+/g, "");
+  if (!TEAMS[c]) { $("status").innerHTML = `<span class="chip bad">Código no encontrado</span> Revisa que tenga la forma DRN-XXXX, como te lo dio el docente.`; return; }
+  code = c; P = TEAMS[c]; state = store.get(c);
+  $("status").innerHTML = c === "DEMO" ? `<span class="badge demo">DATOS DE EJEMPLO</span> Capturen su código para trabajar con su misión.` : `<span class="badge">${c}</span> Misión cargada.`;
+  const R = R_(), H = H_();
+  const Pp = `${num(-P.u)}${term(P.b, "x")}${term(P.a, "y²")}`, Qp = `${P.d}${term(P.e, "y²")}${term(-P.c, "x")}`;
+  $("ficha").innerHTML = [
+    ["Origen y destino", `A = (0, 0) · B = (${P.L}, 0) km`],
+    ["Viento (N)", `F = ⟨${Pp}, ${Qp}⟩`],
+    ["Ruta 1 · recta", `y = 0, 0 ≤ x ≤ ${P.L}`],
+    ["Ruta 2 · parábola", `y = ${P.k}·x(${P.L} − x) · vértice V = (${fmt(P.L / 2, 1)}, ${+H.toFixed(4)})`],
+    ["Ruta 3 · semicircunferencia", `centro (${fmt(R, 1)}, 0), radio R = ${R} km, arco superior`],
+    ["Costo en aire en calma", `ε = ${P.eps} kJ/km`],
+    ["Modelo de energía", `E = ε·ℓ − W  (kJ)`],
+    ["Batería", `E_bat = ${P.Eb} kJ · reserva mínima 20 % → máximo ${fmt(0.8 * P.Eb, 1)} kJ por vuelo`]
+  ].map(([a, b]) => `<div><dt>${a}</dt><dd>${b}</dd></div>`).join("");
+  W0 = {xmin: -0.6, xmax: P.L + 0.6, ymin: -1.0, ymax: R + 0.8};
+  $("plan").style.aspectRatio = `${W0.xmax - W0.xmin}/${W0.ymax - W0.ymin}`;
+  buildRoles(); heatCache = null; drawAll();
+}
+
+/* ---------- Mapa 2D ---------- */
+const plan = $("plan"), pctx = plan.getContext("2d");
+let heatCache = null, PX = {};
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const stops = [[0,[37,78,140]],[.35,[96,146,204]],[.7,[176,208,236]],[1,[246,247,242]]];
+function cmap(v, lo, hi) {
+  const u = Math.min(1, Math.max(0, (v - lo) / (hi - lo)));
+  for (let i = 1; i < stops.length; i++) if (u <= stops[i][0]) {
+    const [u0, c0] = stops[i - 1], [u1, c1] = stops[i], f = (u - u0) / (u1 - u0);
+    return c0.map((c, j) => Math.round(c + (c1[j] - c) * f));
+  }
+  return stops[3][1];
+}
+function sizeCanvas(cv) {
+  const r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
+  const c = cv.getContext("2d"); c.setTransform(dpr, 0, 0, dpr, 0, 0); return [r.width, r.height];
+}
+const RCOL = ["#14213a", "#e5671f", "#7a3fd1"];
+function drawPlan() {
+  if (!P || plan.closest("[hidden]")) return;
+  const [w, h] = sizeCanvas(plan), m = {l:34, r:8, t:8, b:24};
+  if (w < 80) return;
+  const sx = (w - m.l - m.r) / (W0.xmax - W0.xmin), sy = (h - m.t - m.b) / (W0.ymax - W0.ymin);
+  const X = x => m.l + (x - W0.xmin) * sx, Y = y => m.t + (W0.ymax - y) * sy;
+  PX = {X, Y, sx, sy, m, w, h};
+  const c = pctx, muted = css("--muted"), line = css("--line"), dark = "#14213a";
+  c.clearRect(0, 0, w, h);
+  const r1 = rotf(0, W0.ymin), r2 = rotf(0, W0.ymax), lo = Math.min(r1, r2), hi = Math.max(r1, r2);
+  $("lg-lo").textContent = fmt(lo); $("lg-hi").textContent = fmt(hi);
+  if ($("L-rot").checked) {
+    if (!heatCache) {
+      const nx = 160, ny = Math.round(160 * (W0.ymax - W0.ymin) / (W0.xmax - W0.xmin)), off = document.createElement("canvas"); off.width = nx; off.height = ny;
+      const oc = off.getContext("2d"), img = oc.createImageData(nx, ny);
+      for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+        const x = W0.xmin + (i + .5) / nx * (W0.xmax - W0.xmin), y = W0.ymax - (j + .5) / ny * (W0.ymax - W0.ymin);
+        const [r, g, b] = cmap(rotf(x, y), lo, hi), k = 4 * (j * nx + i);
+        img.data[k] = r; img.data[k + 1] = g; img.data[k + 2] = b; img.data[k + 3] = 255;
+      }
+      oc.putImageData(img, 0, 0); heatCache = off;
+    }
+    c.imageSmoothingEnabled = true; c.drawImage(heatCache, m.l, m.t, w - m.l - m.r, h - m.t - m.b);
+  }
+  c.strokeStyle = $("L-rot").checked ? "rgba(20,33,58,.18)" : line; c.lineWidth = 1;
+  c.fillStyle = muted; c.font = "11px " + css("--f-mono"); c.textAlign = "center";
+  for (let x = 0; x <= P.L; x += 1) { c.beginPath(); c.moveTo(X(x), Y(W0.ymin)); c.lineTo(X(x), Y(W0.ymax)); c.stroke(); c.fillText(x, X(x), h - 8); }
+  c.textAlign = "right";
+  for (let y = Math.ceil(W0.ymin); y <= W0.ymax; y += 1) { c.beginPath(); c.moveTo(X(W0.xmin), Y(y)); c.lineTo(X(W0.xmax), Y(y)); c.stroke(); c.fillText(y, m.l - 5, Y(y) + 4); }
+  // costa (y < 0)
+  c.fillStyle = "rgba(20,33,58,.10)"; c.fillRect(X(W0.xmin), Y(0), X(W0.xmax) - X(W0.xmin), Y(W0.ymin) - Y(0));
+  if ($("L-reg").checked) {
+    c.globalAlpha = .22;
+    c.fillStyle = RCOL[2]; c.beginPath(); c.moveTo(X(0), Y(0)); for (let i = 0; i <= 200; i++) { const [x, y] = rp(2, i / 200); c.lineTo(X(x), Y(y)); } c.closePath(); c.fill();
+    c.fillStyle = RCOL[1]; c.beginPath(); c.moveTo(X(0), Y(0)); for (let i = 0; i <= 200; i++) { const [x, y] = rp(1, i / 200); c.lineTo(X(x), Y(y)); } c.closePath(); c.fill();
+    c.globalAlpha = 1;
+    label(c, "D₂", X(P.L / 2) - 8, Y(H_() / 2) + 4); label(c, "D₃", X(P.L / 2) - 8, Y((H_() + R_()) / 2) + 4);
+  }
+  if ($("L-field").checked) {
+    let mx = 0; const pts = [], st = P.L / 10;
+    for (let x = 0; x <= P.L + 1e-9; x += st) for (let y = W0.ymin + .3; y <= W0.ymax; y += st) { const f = Fv(x, y); mx = Math.max(mx, Math.hypot(...f)); pts.push([x, y, f]); }
+    const fc = $("L-rot").checked ? "#14213a" : css("--ink"); c.strokeStyle = fc; c.fillStyle = fc; c.globalAlpha = .7; c.lineWidth = 1.2;
+    for (const [x, y, f] of pts) { const Lf = Math.hypot(...f); if (Lf < 1e-9) continue; const sc = st * (0.25 + 0.6 * Lf / mx); arrow(c, X(x), Y(y), X(x + f[0] / Lf * sc), Y(y + f[1] / Lf * sc), 5); }
+    c.globalAlpha = 1;
+  }
+  c.lineJoin = "round";
+  [0, 1, 2].forEach(i => {
+    if (!$("L-r" + (i + 1)).checked) return;
+    for (const [col, lw] of [["#ffffff", 5], [RCOL[i], i === ruta ? 3 : 2]]) {
+      c.strokeStyle = col; c.lineWidth = lw; c.setLineDash(i === ruta || col === "#ffffff" ? [] : [6, 4]); c.beginPath();
+      for (let j = 0; j <= 300; j++) { const [x, y] = rp(i, j / 300); j ? c.lineTo(X(x), Y(y)) : c.moveTo(X(x), Y(y)); }
+      c.stroke();
+    }
+    c.setLineDash([]);
+  });
+  for (const [x, y, t] of [[0, 0, "A"], [P.L, 0, "B"]]) { c.fillStyle = "#ffffff"; c.strokeStyle = dark; c.lineWidth = 2; c.beginPath(); c.arc(X(x), Y(y), 6, 0, 2 * Math.PI); c.fill(); c.stroke(); label(c, t, X(x) + (x ? 8 : -16), Y(y) + 18); }
+  if ($("L-r2").checked) { c.fillStyle = RCOL[1]; c.beginPath(); c.arc(X(P.L / 2), Y(H_()), 4, 0, 2 * Math.PI); c.fill(); label(c, "V", X(P.L / 2) + 6, Y(H_()) - 6); }
+  // dron
+  const [dx, dy] = rp(ruta, s), v = rd(ruta, s), sp = Math.hypot(...v), Tu = [v[0] / sp, v[1] / sp], f = Fv(dx, dy), FT = f[0] * Tu[0] + f[1] * Tu[1];
+  c.lineWidth = 2.5; c.strokeStyle = css("--accent"); c.fillStyle = css("--accent");
+  const fl = Math.hypot(...f); if (fl > 1e-9) arrow(c, X(dx), Y(dy), X(dx + f[0] / fl * P.L * .08), Y(dy + f[1] / fl * P.L * .08), 8);
+  drawDrone(c, X(dx), Y(dy));
+  $("r-s").textContent = fmt(100 * s, 0) + " %"; $("r-xy").textContent = `(${fmt(dx)}, ${fmt(dy)})`;
+  $("r-F").textContent = `⟨${fmt(f[0])}, ${fmt(f[1])}⟩`;
+  $("r-FT").innerHTML = `${fmt(FT)} ${FT >= 0 ? '<span class="chip ok">a favor</span>' : '<span class="chip bad">en contra</span>'}`;
+}
+function drawDrone(c, x, y) {
+  c.save(); c.translate(x, y); c.strokeStyle = "#14213a"; c.lineWidth = 2.2;
+  c.beginPath(); c.moveTo(-9, -9); c.lineTo(9, 9); c.moveTo(9, -9); c.lineTo(-9, 9); c.stroke();
+  for (const [a, b] of [[-9, -9], [9, -9], [-9, 9], [9, 9]]) { c.beginPath(); c.arc(a, b, 4.5, 0, 2 * Math.PI); c.fillStyle = "#ffffff"; c.fill(); c.stroke(); }
+  c.fillStyle = "#e5671f"; c.beginPath(); c.arc(0, 0, 4.5, 0, 2 * Math.PI); c.fill(); c.stroke(); c.restore();
+}
+function label(c, txt, x, y) { c.font = "600 12px " + css("--f-body"); c.lineWidth = 3; c.strokeStyle = "#ffffff"; c.strokeText(txt, x, y); c.fillStyle = "#14213a"; c.fillText(txt, x, y); }
+function arrow(c, x0, y0, x1, y1, hs) {
+  const an = Math.atan2(y1 - y0, x1 - x0); c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke();
+  c.beginPath(); c.moveTo(x1, y1); c.lineTo(x1 - hs * Math.cos(an - .45), y1 - hs * Math.sin(an - .45)); c.lineTo(x1 - hs * Math.cos(an + .45), y1 - hs * Math.sin(an + .45)); c.closePath(); c.fill();
+}
+plan.addEventListener("pointermove", e => {
+  if (!P || !PX.X) return; const r = plan.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
+  const x = W0.xmin + (mx - PX.m.l) / PX.sx, y = W0.ymax - (my - PX.m.t) / PX.sy;
+  if (x < W0.xmin || x > W0.xmax || y < W0.ymin || y > W0.ymax) return;
+  $("r-cur").textContent = `(${fmt(x, 1)}, ${fmt(y, 1)}) · rot ${fmt(rotf(x, y))}`;
+});
+
+/* ---------- Perfil de viento ---------- */
+function drawPerfil() {
+  const cv = $("perfil"); if (!P || cv.closest("[hidden]")) return;
+  const [w, h] = sizeCanvas(cv), c = cv.getContext("2d"), m = {l:44, r:12, t:12, b:30};
+  const N = 600, curves = [];
+  let ymin = 0, ymax = 0, smax = 0;
+  for (let i = 0; i < 3; i++) {
+    const pts = []; let sacc = 0, prev = rp(i, 0);
+    for (let j = 0; j <= N; j++) {
+      const u = j / N, p = rp(i, u); sacc += Math.hypot(p[0] - prev[0], p[1] - prev[1]); prev = p;
+      const v = rd(i, u), sp = Math.hypot(...v), f = Fv(...p), ft = (f[0] * v[0] + f[1] * v[1]) / sp;
+      pts.push([sacc, ft]); ymin = Math.min(ymin, ft); ymax = Math.max(ymax, ft);
+    }
+    smax = Math.max(smax, sacc); curves.push(pts);
+  }
+  ymin = Math.floor(ymin) - 1; ymax = Math.ceil(ymax) + 1;
+  const X = sv => m.l + sv / smax * (w - m.l - m.r), Y = v => m.t + (ymax - v) / (ymax - ymin) * (h - m.t - m.b);
+  c.clearRect(0, 0, w, h); c.strokeStyle = css("--line"); c.fillStyle = css("--muted"); c.font = "11px " + css("--f-mono"); c.lineWidth = 1;
+  const stp = Math.max(1, Math.round((ymax - ymin) / 6));
+  c.textAlign = "right"; for (let v = Math.ceil(ymin / stp) * stp; v <= ymax; v += stp) { c.beginPath(); c.moveTo(m.l, Y(v)); c.lineTo(w - m.r, Y(v)); c.stroke(); c.fillText(v, m.l - 6, Y(v) + 4); }
+  c.textAlign = "center"; for (let sv = 0; sv <= smax; sv += 1) c.fillText(sv, X(sv), h - 10);
+  c.strokeStyle = css("--ink"); c.lineWidth = 1.2; c.beginPath(); c.moveTo(m.l, Y(0)); c.lineTo(w - m.r, Y(0)); c.stroke();
+  curves.forEach((pts, i) => {
+    const col = i === 0 ? css("--ink") : RCOL[i];
+    c.strokeStyle = col; c.lineWidth = i === ruta ? 3 : 1.8; c.beginPath();
+    pts.forEach(([sv, v], j) => j ? c.lineTo(X(sv), Y(v)) : c.moveTo(X(sv), Y(v))); c.stroke();
+    const [sl, vl] = pts[pts.length - 1]; c.fillStyle = col; c.textAlign = "left"; c.font = "600 12px " + css("--f-body"); c.fillText("Ruta " + (i + 1), Math.min(X(sl) - 46, w - 60), Y(vl) - 8);
+  });
+  const pts = curves[ruta], j = Math.round(s * N), [sv, v] = pts[j];
+  c.fillStyle = css("--accent"); c.beginPath(); c.arc(X(sv), Y(v), 5, 0, 2 * Math.PI); c.fill();
+}
+
+/* ---------- UI ---------- */
+function drawAll() { drawPlan(); drawPerfil(); }
+$("f-code").addEventListener("submit", e => { e.preventDefault(); loadTeam($("code").value); });
+$("sslider").addEventListener("input", e => { s = +e.target.value; drawAll(); });
+document.querySelectorAll('input[name=ruta]').forEach(r => r.addEventListener("change", () => { ruta = +r.value; drawAll(); }));
+let last = 0;
+function step(ts) { if (!playing) return; if (last) { s += (ts - last) / 1000 * 0.12; if (s > 1) s = 0; $("sslider").value = s; drawAll(); } last = ts; requestAnimationFrame(step); }
+$("play").addEventListener("click", () => { playing = !playing; last = 0; $("play").textContent = playing ? "❚❚ Pausa" : "▶ Volar"; if (playing) requestAnimationFrame(step); });
+["L-rot","L-field","L-r1","L-r2","L-r3","L-reg"].forEach(id => $(id).addEventListener("change", drawPlan));
+const tabs = [["t-plan","v-plan"],["t-perfil","v-perfil"],["t-ver","v-ver"]];
+tabs.forEach(([tb, vw]) => $(tb).addEventListener("click", () => {
+  tabs.forEach(([a, b]) => { $(a).setAttribute("aria-selected", a === tb); $(b).hidden = a !== tb; });
+  if (vw === "v-plan") drawPlan(); if (vw === "v-perfil") drawPerfil();
+}));
+window.addEventListener("resize", () => { drawAll(); });
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => drawAll());
+$("code").value = "DEMO"; loadTeam("DEMO");
+</script>
+</body>
+</html>
