@@ -300,7 +300,7 @@ function check(k) {
 /* ---------- Carga de equipo ---------- */
 function loadTeam(c) {
   c = c.trim().toUpperCase().replace(/\s+/g, "");
-  if (!TEAMS[c]) { $("status").innerHTML = `<span class="chip bad">Código no encontrado</span> Revisa que tenga la forma DRN-XXXX, como te lo dio el docente.`; return; }
+  if (!TEAMS[c]) { $("status").innerHTML = `<span class="chip bad">Código no encontrado</span> Revisa que tenga la forma DRN-XXXX, como aparece en la hoja de registro de equipos.`; return; }
   code = c; P = TEAMS[c]; state = store.get(c);
   $("status").innerHTML = c === "DEMO" ? `<span class="badge demo">DATOS DE EJEMPLO</span> Capturen su código para trabajar con su misión.` : `<span class="badge">${c}</span> Misión cargada.`;
   const R = R_(), H = H_();
