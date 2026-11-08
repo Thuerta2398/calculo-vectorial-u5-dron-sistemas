@@ -128,7 +128,16 @@ Con \(x=3+r\cos\theta\), \(y=r\sin\theta\), \(dA=r\,dr\,d\theta\):
 \resultado{Green explica la diferencia: como \(\operatorname{rot}\vec F<0\) en la región entre las rutas, \(W_1-W_i<0\), es decir, \(W_i>W_1\). Entre más área de rotacional negativo encierra una ruta, más la ayuda el viento.}
 
 \section{Paso 3 · Python: longitud, energía y decisión}
-Completen la plantilla. Estos son los fragmentos clave con los datos \texttt{DEMO}:
+\paso{a) Llevar sus datos a la plantilla}
+En la consola, debajo de las capas del mapa, está el panel \textbf{Datos para Python (Colab)}. Pulsen \emph{Copiar bloque} y peguen el texto en la sección~0 de la plantilla (en Colab, la primera celda de código después de las importaciones), en lugar de las dos líneas \texttt{CODIGO} y \texttt{PARAMS}. La tabla del panel dice qué es cada parámetro.
+\begin{center}\includegraphics[width=0.36\linewidth]{c2_python.png}\end{center}
+Con \texttt{DEMO}, la sección~0 queda así:
+\begin{lstlisting}
+CODIGO = "DEMO"
+PARAMS = dict(L=6, k=0.15, u=1, b=0.3, a=0.15, e=0.05, c=2.5, d=7.5, eps=12, Eb=90)
+\end{lstlisting}
+\paso{b) Completar los bloques por rol}
+Busquen \texttt{TODO}: la sección~1 es de Dinámica, la 2 de Logística, la 3 de Análisis de Zona, la 4 de Calidad y la 5 de todo el equipo. Estos son los fragmentos clave con los datos \texttt{DEMO}:
 \begin{lstlisting}
 def trabajo(i):
     r, dr, t0, t1 = RUTAS[i]

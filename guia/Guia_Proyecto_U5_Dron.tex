@@ -101,7 +101,7 @@ Mostrar la parametrización (\(x=t\), \(y=k\,t(L-t)\)), cada término y su integ
 Explicar con Green \textbf{por qué} las rutas curvas reciben un trabajo del viento distinto al de la recta.
 
 \section{Componente Python (todo el equipo)}
-Partan de la plantilla \texttt{dron\_plantilla.py} (o su versión para Google Colab, \texttt{dron\_plantilla.ipynb}) del repositorio del curso. Cada integrante programa el bloque de su rol; el programa completo debe:
+Partan de la plantilla \texttt{dron\_plantilla.py} (o su versión para Google Colab, \texttt{dron\_plantilla.ipynb}) del repositorio del curso. Primero copien de la consola el bloque \textbf{Datos para Python (Colab)} (botón \emph{Copiar bloque}) y péguenlo en la sección~0 de la plantilla, en lugar de las líneas \texttt{CODIGO} y \texttt{PARAMS}. Después, cada integrante programa el bloque de su rol; el programa completo debe:
 \begin{enumerate}
 \item Calcular numéricamente \(W_1,W_2,W_3\) con \texttt{scipy.integrate.quad} e \(I_2,I_3\) con \texttt{dblquad}, y comprobar Green.
 \item Calcular la longitud de la Ruta 2, \(\ell_2=\int_0^L\sqrt{1+k^2(L-2t)^2}\,dt\), las energías \(E_1,E_2,E_3\) y la ruta más económica.
@@ -113,7 +113,7 @@ Entreguen el código como \textbf{repositorio público de GitHub} o \textbf{cuad
 Herramienta en línea que funciona en computadora o celular, sin instalar nada:
 \begin{center}\small\url{https://thuerta2398.github.io/calculo-vectorial-u5-dron-sistemas/}\end{center}
 \begin{enumerate}
-\item Capturen su código de equipo y pulsen \emph{Cargar misión}. Se muestran su ficha técnica y su mapa.
+\item Capturen su código de equipo y pulsen \emph{Cargar misión}. Se muestran su ficha técnica, su mapa y el bloque \textbf{Datos para Python (Colab)}, listo para copiar a la plantilla, con el significado de cada parámetro.
 \item \textbf{Mapa 2D}: activen las capas (rotacional, campo \(\vec F\), rutas, regiones \(D_2\) y \(D_3\)), elijan una ruta y pulsen \emph{Volar}; la consola muestra \(\vec F\) y \(\vec F\cdot\hat T\) en la posición del dron.
 \item \textbf{Perfil de viento}: \(\vec F\cdot\hat T\) a lo largo de cada ruta. El área bajo cada curva es el trabajo \(W_i\).
 \item \textbf{Verificador}: capturen sus 9 resultados. La consola solo responde \emph{Correcto} o \emph{Revisa}; tras varios intentos ofrece pistas. Formato: punto decimal, sin unidades, al menos 2 decimales (\texttt{-14.37}, no \texttt{-14,37} ni \texttt{-14.37 kJ}).

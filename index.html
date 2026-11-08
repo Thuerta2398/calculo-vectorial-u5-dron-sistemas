@@ -45,6 +45,11 @@ button:hover{filter:brightness(1.08)}
 .badge{display:inline-block;font-family:var(--f-mono);font-size:.75rem;padding:2px 8px;border-radius:99px;background:var(--brand-soft);color:var(--brand);letter-spacing:.04em}
 .badge.demo{background:var(--bad-soft);color:var(--bad)}
 dl.ficha{margin:0;display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+pre.py{margin:6px 0 8px;padding:10px;background:var(--bg);border:1px solid var(--line);border-radius:6px;font-family:var(--f-mono);font-size:.78rem;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ink)}
+table.glos{width:100%;border-collapse:collapse;font-size:.78rem;margin-top:8px}
+table.glos td{border-top:1px dashed var(--line);padding:4px 4px;vertical-align:top}
+table.glos td:first-child{font-family:var(--f-mono);font-weight:600;white-space:nowrap}
+table.glos td:last-child{font-family:var(--f-mono);text-align:right;white-space:nowrap}
 dl.ficha div{border-top:1px dashed var(--line);padding-top:6px}
 dl.ficha dt{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
 dl.ficha dd{margin:0;font-family:var(--f-mono);font-size:.86rem;overflow-wrap:anywhere}
@@ -127,6 +132,13 @@ sub,sup{font-size:.72em}
           <label><input type="checkbox" id="L-r3" checked> Ruta 3</label>
           <label><input type="checkbox" id="L-reg"> Regiones D₂, D₃</label>
         </div>
+      </section>
+      <section class="panel" aria-labelledby="h-py">
+        <h2 id="h-py">Datos para Python (Colab)</h2>
+        <p class="note">Copien este bloque y péguenlo en la <b>sección 0</b> de la plantilla, en lugar de las líneas <code>CODIGO</code> y <code>PARAMS</code>. Así su programa usa exactamente los datos de su misión.</p>
+        <pre class="py" id="pycode"></pre>
+        <div class="row"><button type="button" id="copy-py">Copiar bloque</button><span class="note" id="copy-msg"></span></div>
+        <table class="glos" aria-label="Significado de cada parámetro"><tbody id="glos"></tbody></table>
       </section>
     </aside>
 
@@ -297,6 +309,36 @@ function check(k) {
   store.set(code, state); paint(k);
 }
 
+
+const GLOS = [
+  ["L", "Distancia de A a B (km)"],
+  ["k", "Curvatura de la Ruta 2: y = k·x(L − x)"],
+  ["u", "Viento en contra sobre la costa, en P (N)"],
+  ["b", "Coeficiente de x en P (N/km)"],
+  ["a", "Coeficiente de y² en P (N/km²)"],
+  ["e", "Coeficiente de y² en Q (N/km²)"],
+  ["c", "Coeficiente de −x en Q (N/km)"],
+  ["d", "Término constante de Q (N)"],
+  ["eps", "ε: costo por km en aire en calma (kJ/km)"],
+  ["Eb", "Capacidad de la batería (kJ)"]
+];
+function pyBlock() {
+  const kv = ["L","k","u","b","a","e","c","d","eps","Eb"].map(k => `${k}=${P[k]}`).join(", ");
+  return `CODIGO = "${code}"\nPARAMS = dict(${kv})`;
+}
+function renderPy() {
+  $("pycode").textContent = pyBlock();
+  $("glos").innerHTML = GLOS.map(([k, t]) => `<tr><td>${k}</td><td>${t}</td><td>${P[k]}</td></tr>`).join("");
+  $("copy-msg").textContent = "";
+}
+$("copy-py").addEventListener("click", async () => {
+  const txt = pyBlock();
+  try { await navigator.clipboard.writeText(txt); $("copy-msg").textContent = "Copiado. Péguenlo en la sección 0 de la plantilla."; }
+  catch (e) {
+    const r = document.createRange(); r.selectNodeContents($("pycode")); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    $("copy-msg").textContent = "Texto seleccionado: cópienlo con Ctrl+C (⌘+C en Mac).";
+  }
+});
 /* ---------- Carga de equipo ---------- */
 function loadTeam(c) {
   c = c.trim().toUpperCase().replace(/\s+/g, "");
@@ -317,7 +359,7 @@ function loadTeam(c) {
   ].map(([a, b]) => `<div><dt>${a}</dt><dd>${b}</dd></div>`).join("");
   W0 = {xmin: -0.6, xmax: P.L + 0.6, ymin: -1.0, ymax: R + 0.8};
   $("plan").style.aspectRatio = `${W0.xmax - W0.xmin}/${W0.ymax - W0.ymin}`;
-  buildRoles(); heatCache = null; drawAll();
+  renderPy(); buildRoles(); heatCache = null; drawAll();
 }
 
 /* ---------- Mapa 2D ---------- */

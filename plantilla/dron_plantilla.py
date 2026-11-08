@@ -3,7 +3,8 @@ Proyecto Final U5 · Cálculo Vectorial · TecNM Campus Ensenada
 Dron de reparto en un campo de viento: PLANTILLA DEL EQUIPO
 
 Instrucciones
-1. Copien los parámetros de la ficha técnica de la consola en PARAMS.
+1. En la consola, carguen su código y copien el bloque "Datos para Python (Colab)"
+   (botón "Copiar bloque"). Péguenlo en la sección 0, en lugar de las dos líneas CODIGO y PARAMS.
 2. Cada integrante completa los bloques de su rol (busquen "TODO").
 3. Ejecuten:  python dron_plantilla.py
    Debe imprimir los resultados y generar mapa_<codigo>.png, energia_<codigo>.png y vuelo_<codigo>.gif.
@@ -20,10 +21,12 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation, PillowWriter
 
 # ------------------------------------------------------------------
-# 0. Parámetros del equipo (cópienlos de la ficha técnica)
+# 0. Parámetros del equipo
+#    PEGUEN AQUÍ el bloque "Datos para Python (Colab)" de la consola, reemplazando
+#    las dos líneas siguientes (vienen con los datos DEMO). No cambien nada más.
 # ------------------------------------------------------------------
 CODIGO = "DEMO"
-PARAMS = dict(L=6, k=0.15, u=1, b=0.3, a=0.15, e=0.05, c=2.5, d=7.5, eps=12, Eb=90)   # datos DEMO
+PARAMS = dict(L=6, k=0.15, u=1, b=0.3, a=0.15, e=0.05, c=2.5, d=7.5, eps=12, Eb=90)
 L, k, u, b, a, e, c, d, eps, Eb = (PARAMS[s] for s in ("L", "k", "u", "b", "a", "e", "c", "d", "eps", "Eb"))
 R = L / 2
 
